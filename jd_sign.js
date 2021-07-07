@@ -9,8 +9,6 @@ const download = require('download')
 
 // 京东cookie
 const cookie = process.env.JD_COOKIE
-// Server酱SCKEY
-const push_key = process.env.PUSH_KEY
 
 // 京东脚本文件
 const js_url = 'https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js'
@@ -49,41 +47,29 @@ function setupCookie() {
 
 function sendNotificationIfNeed() {
 
-  if (!push_key) {
-    console.log('执行任务结束!'); return;
-  }
-
   if (!fs.existsSync(result_path)) {
     console.log('没有执行结果，任务中断!'); return;
   }
 
-  let text = "京东签到_" + new Date().Format('yyyy.MM.dd');
-  let desp = fs.readFileSync(result_path, "utf8")
+    let desp = fs.readFileSync(result_path, "utf8")
+    desp = desp.split('\n')
+    var mes = ["京东签到_" + new Date().Format('yyyy.MM.dd')]
+    var token = ['京东商城-京豆', '签到概览', '账号总计', '签到用时']
+    desp.forEach(d => {
+        token.forEach(t => {
+            if (d.indexOf(t) != -1) {
+                mes.push(d)
+            }
+        })
+    })
+    mes = mes.join('\n')
 
-  // 去除末尾的换行
-  let SCKEY = push_key.replace(/[\r\n]/g,"")
-
-  const options ={
-    uri:  `https://sc.ftqq.com/${SCKEY}.send`,
-    form: { text, desp },
-    json: true,
-    method: 'POST'
-  }
-
-  rp.post(options).then(res=>{
-    const code = res['errno'];
-    if (code == 0) {
-      console.log("通知发送成功，任务结束！")
+    console.log(`http://yvan-wechat.herokuapp.com/admin/` + encodeURI(mes))
+    const options ={
+        uri:  `http://yvan-wechat.herokuapp.com/admin/` + encodeURI(mes),
     }
-    else {
-      console.log(res);
-      console.log("通知发送失败，任务中断！")
-      fs.writeFileSync(error_path, JSON.stringify(res), 'utf8')
-    }
-  }).catch((err)=>{
-    console.log("通知发送失败，任务中断！")
-    fs.writeFileSync(error_path, err, 'utf8')
-  })
+
+    rp.get(options)
 }
 
 function main() {
